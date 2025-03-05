@@ -13,24 +13,35 @@ public class CharacterMotor : MonoBehaviour
     [SerializeField] private Vector3 colliderOffset = Vector3.zero;
 
     [Header("Cast Settings")]
-    [SerializeField] private float castLength = 1f;
     [SerializeField] private float skinWidth = 0.01f;
 
-    [Header("Layers")]
+    [Header("Layers Settings")]
     [SerializeField] private LayerMask targetLayers;
+
+    [Header("Gravity Settings")]
+    [SerializeField] private bool useGravity = true;
+    [SerializeField] private float gravity = 30f;
+    [SerializeField] private float gravityFriction = 100f;
+    [SerializeField] private float slideGravity = 5f;
+
+    [Header("Slope Setting")]
+    [SerializeField, Range(0f, 89f)] private float slopeLimit = 60f;
 
     private Rigidbody body;
     private Transform tr;
     private CapsuleCollider col;
 
+    [Header("Debug")]
     private bool isGrounded = false;
-    private float baseSensorRange;
-    private Vector3 currentGroundAdjustVelocity = Vector3.zero;
-    private int currentLayer;
+    private bool isSloped = false;
+    private bool isSteepSloped = false;
 
-    private CapsuleCaster sensor;
+    private Vector3 currentGroundAdjustVelocity = Vector3.zero;
+    private Vector3 momentum, inputVelocity, savedVelocity = Vector3.zero;
 
     public float StepHeightFromCapsule => (colliderHeight - col.height);
+    public Vector3 CapsuleTopPoint => col.bounds.center + new Vector3(0f, (col.height * 0.5f * tr.localScale.y) - col.radius * tr.localScale.x, 0f);
+    public Vector3 CapsuleBottomPoint => col.bounds.center - new Vector3(0f, (col.height * 0.5f * tr.localScale.y) - col.radius * tr.localScale.x, 0f);
 
     void Awake()
     {
@@ -42,15 +53,59 @@ public class CharacterMotor : MonoBehaviour
         RecalculateColliderDimensions();
     }
 
+    void FixedUpdate()
+    {
+        DetectingGround();
+        HandleMomentum();
+
+        //SetVelocity(Vecto);
+        SetVelocity(momentum);
+    }
+
+    public void SetVelocity(Vector3 velocity) => body.velocity = velocity + currentGroundAdjustVelocity;
+
     public void DetectingGround()
     {
-        sensor ??= new CapsuleCaster(tr);
-
-        sensor.Cast();
-
         currentGroundAdjustVelocity = Vector3.zero;
+        isGrounded = false;
 
-        isGrounded = sensor.HasHit();
+        const float safetyDistanceFactor = 0.001f;
+
+        float castRadius = colliderRadius * tr.localScale.x;
+        float castLength = StepHeightFromCapsule * tr.localScale.x + safetyDistanceFactor;
+
+        var cast = Physics.CapsuleCast(CapsuleTopPoint, CapsuleBottomPoint, castRadius - skinWidth,
+            -tr.up, out var hit, castLength, targetLayers);
+
+        if (cast)
+        {
+            isGrounded = true;
+
+            float distance = hit.distance;
+            float distanceToGo = StepHeightFromCapsule - distance;
+
+            currentGroundAdjustVelocity = tr.up * (distanceToGo / Time.fixedDeltaTime);
+        }
+    }
+
+    public void HandleMomentum()
+    {
+        Vector3 verticalMomentum = momentum.ExtractDotVector(tr.up);
+        Vector3 horizontalMomentum = momentum - verticalMomentum;
+
+        verticalMomentum -= tr.up * (gravity * Time.deltaTime);
+
+        if (isGrounded && verticalMomentum.GetDotProduct(tr.up) < 0f)
+        {
+            verticalMomentum = Vector3.zero;
+        }
+
+        if (!isGrounded)
+        {
+
+        }
+
+        momentum = horizontalMomentum + verticalMomentum;
     }
 
     private void SetUp()
@@ -85,6 +140,9 @@ public class CharacterMotor : MonoBehaviour
         Gizmos.color = Color.red;
         Gizmos.DrawLine(col.bounds.center + new Vector3(0f, -col.height * 0.5f, 0f),
             col.bounds.center + new Vector3(0f, -col.height * 0.5f, 0f) + new Vector3(0f, -StepHeightFromCapsule, 0f));
+
+        Gizmos.DrawSphere(CapsuleTopPoint, 0.2f);
+        Gizmos.DrawSphere(CapsuleBottomPoint, 0.1f);
     }
 }
 
@@ -99,4 +157,11 @@ public struct GroundInfo
     public bool HasHit() => rayHit.collider != null;
     public Vector3 GetPoint() => rayHit.point;
     public Rigidbody GetRigidbody() => rayHit.rigidbody;
+}
+
+public class CharacterState
+{
+    public bool isGrounded;
+    public bool isSloped;
+    public bool isSteepSloped;
 }
