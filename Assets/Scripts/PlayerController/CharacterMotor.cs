@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
@@ -27,6 +25,12 @@ public class CharacterMotor : MonoBehaviour
     [Header("Slope Setting")]
     [SerializeField, Range(0f, 89f)] private float slopeLimit = 60f;
 
+    [Header("Movement Setting")]
+    [SerializeField] private float groundFriction = 100f;
+    [SerializeField] private bool useAirFriction = true;
+    [SerializeField] private float airFriction = 0.5f;
+    [SerializeField] private float airControlRate = 0.5f;
+
     private Rigidbody body;
     private Transform tr;
     private CapsuleCollider col;
@@ -35,13 +39,18 @@ public class CharacterMotor : MonoBehaviour
     private bool isGrounded = false;
     private bool isSloped = false;
     private bool isSteepSloped = false;
+    private bool isUsingExtendedSensorRange = false;
 
+    private CapsuleCastSensor sensor;
     private Vector3 currentGroundAdjustVelocity = Vector3.zero;
     private Vector3 momentum, inputVelocity, savedVelocity = Vector3.zero;
+    private float savedMoveSpeed = 0f;
 
     public float StepHeightFromCapsule => (colliderHeight - col.height);
     public Vector3 CapsuleTopPoint => col.bounds.center + new Vector3(0f, (col.height * 0.5f * tr.localScale.y) - col.radius * tr.localScale.x, 0f);
     public Vector3 CapsuleBottomPoint => col.bounds.center - new Vector3(0f, (col.height * 0.5f * tr.localScale.y) - col.radius * tr.localScale.x, 0f);
+
+    public void SetExtendSensorRange(bool isExtended) => isUsingExtendedSensorRange = isExtended;
 
     void Awake()
     {
@@ -58,33 +67,81 @@ public class CharacterMotor : MonoBehaviour
         DetectingGround();
         HandleMomentum();
 
-        //SetVelocity(Vecto);
-        SetVelocity(momentum);
+        Vector3 velocity = isGrounded ? inputVelocity : Vector3.zero;
+        velocity += momentum;
+
+        SetExtendSensorRange(isGrounded);
+        SetVelocity(velocity);
+
+        savedVelocity = velocity;
+    }
+
+    void Update()
+    {
+        const float moveSpd = 5f;
+
+        var x = Input.GetAxis("Horizontal");
+        var z = Input.GetAxis("Vertical");
+
+        Move(new Vector3(x, 0f, z) * moveSpd);
+    }
+
+    public void Move(Vector3 movementVelocity)
+    {
+        inputVelocity = movementVelocity;
+
+        if (movementVelocity.magnitude > savedMoveSpeed)
+        {
+            savedMoveSpeed = movementVelocity.magnitude;
+        }
     }
 
     public void SetVelocity(Vector3 velocity) => body.velocity = velocity + currentGroundAdjustVelocity;
 
     public void DetectingGround()
     {
+        sensor ??= new CapsuleCastSensor(tr);
+
         currentGroundAdjustVelocity = Vector3.zero;
         isGrounded = false;
+        isSloped = false;
+        isSteepSloped = false;
 
         const float safetyDistanceFactor = 0.001f;
 
-        float castRadius = colliderRadius * tr.localScale.x;
-        float castLength = StepHeightFromCapsule * tr.localScale.x + safetyDistanceFactor;
+        float castRadius = colliderRadius * tr.localScale.x - skinWidth;
 
-        var cast = Physics.CapsuleCast(CapsuleTopPoint, CapsuleBottomPoint, castRadius - skinWidth,
-            -tr.up, out var hit, castLength, targetLayers);
+        float baseLength = StepHeightFromCapsule * tr.localScale.y + safetyDistanceFactor;
+        float castLength = isUsingExtendedSensorRange ?
+            baseLength + colliderHeight * tr.localScale.y * stepHeightRatio :
+            baseLength;
 
-        if (cast)
+        sensor.WithCapsulePoint(CapsuleTopPoint, CapsuleBottomPoint).
+            WithCastRadius(castRadius).
+            WithCastDirection(-tr.up).
+            WithCastLength(castLength).
+            WithCastLayers(targetLayers).Cast();
+
+        if (sensor.hasHit())
         {
             isGrounded = true;
 
-            float distance = hit.distance;
+            float distance = sensor.GetDistance();
             float distanceToGo = StepHeightFromCapsule - distance;
 
             currentGroundAdjustVelocity = tr.up * (distanceToGo / Time.fixedDeltaTime);
+
+            Vector3 normal = sensor.GetNormal();
+
+            if (normal != tr.up)
+            {
+                isSloped = true;
+
+                if (Vector3.Angle(normal, tr.up) > slopeLimit)
+                {
+                    isSteepSloped = true;
+                }
+            }
         }
     }
 
@@ -102,8 +159,13 @@ public class CharacterMotor : MonoBehaviour
 
         if (!isGrounded)
         {
-
+            //공중에서 가속 처리
+            horizontalMomentum = inputVelocity;
+            horizontalMomentum = Vector3.MoveTowards(horizontalMomentum, Vector3.zero, Time.deltaTime * airControlRate);
         }
+
+        float friction = isGrounded || !useAirFriction ? groundFriction : airFriction;
+        horizontalMomentum = Vector3.MoveTowards(horizontalMomentum, Vector3.zero, friction * Time.deltaTime);
 
         momentum = horizontalMomentum + verticalMomentum;
     }
