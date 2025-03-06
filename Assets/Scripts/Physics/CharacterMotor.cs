@@ -35,7 +35,6 @@ public class CharacterMotor : MonoBehaviour
     private Transform tr;
     private CapsuleCollider col;
 
-    [Header("Debug")]
     private bool isGrounded = false;
     private bool isSloped = false;
     private bool isSteepSloped = false;
@@ -51,6 +50,10 @@ public class CharacterMotor : MonoBehaviour
     public Vector3 CapsuleBottomPoint => col.bounds.center - new Vector3(0f, (col.height * 0.5f * tr.localScale.y) - col.radius * tr.localScale.x, 0f);
 
     public void SetExtendSensorRange(bool isExtended) => isUsingExtendedSensorRange = isExtended;
+
+    public bool IsGrounded() => isGrounded;
+    public bool IsSloped() => isSloped;
+    public bool IsSteepSloped() => isSteepSloped;
 
     void Awake()
     {
@@ -76,16 +79,6 @@ public class CharacterMotor : MonoBehaviour
         savedVelocity = velocity;
     }
 
-    void Update()
-    {
-        const float moveSpd = 5f;
-
-        var x = Input.GetAxis("Horizontal");
-        var z = Input.GetAxis("Vertical");
-
-        Move(new Vector3(x, 0f, z) * moveSpd);
-    }
-
     public void Move(Vector3 movementVelocity)
     {
         inputVelocity = movementVelocity;
@@ -93,6 +86,17 @@ public class CharacterMotor : MonoBehaviour
         if (movementVelocity.magnitude > savedMoveSpeed)
         {
             savedMoveSpeed = movementVelocity.magnitude;
+        }
+    }
+
+    public void Rotate(Vector3 moveDirection, float delta)
+    {
+        moveDirection.Normalize();
+
+        if (moveDirection != Vector3.zero)
+        {
+            Quaternion target = Quaternion.LookRotation(moveDirection);
+            transform.rotation = Quaternion.Slerp(transform.rotation, target, delta);
         }
     }
 
@@ -150,7 +154,10 @@ public class CharacterMotor : MonoBehaviour
         Vector3 verticalMomentum = momentum.ExtractDotVector(tr.up);
         Vector3 horizontalMomentum = momentum - verticalMomentum;
 
-        verticalMomentum -= tr.up * (gravity * Time.deltaTime);
+        if (useGravity)
+        {
+            verticalMomentum -= tr.up * (gravity * Time.deltaTime);
+        }
 
         if (isGrounded && verticalMomentum.GetDotProduct(tr.up) < 0f)
         {
