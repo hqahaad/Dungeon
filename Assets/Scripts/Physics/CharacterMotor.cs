@@ -39,11 +39,13 @@ public class CharacterMotor : MonoBehaviour
     private bool isSloped = false;
     private bool isSteepSloped = false;
     private bool isUsingExtendedSensorRange = false;
+    private bool isJump = false;
+
+    private bool canJump = true;
 
     private CapsuleCastSensor sensor;
     private Vector3 currentGroundAdjustVelocity = Vector3.zero;
     private Vector3 momentum, inputVelocity, savedVelocity = Vector3.zero;
-    private float savedMoveSpeed = 0f;
 
     public float StepHeightFromCapsule => (colliderHeight - col.height);
     public Vector3 CapsuleTopPoint => col.bounds.center + new Vector3(0f, (col.height * 0.5f * tr.localScale.y) - col.radius * tr.localScale.x, 0f);
@@ -82,11 +84,6 @@ public class CharacterMotor : MonoBehaviour
     public void Move(Vector3 movementVelocity)
     {
         inputVelocity = movementVelocity;
-
-        if (movementVelocity.magnitude > savedMoveSpeed)
-        {
-            savedMoveSpeed = movementVelocity.magnitude;
-        }
     }
 
     public void Rotate(Vector3 moveDirection, float delta)
@@ -100,7 +97,27 @@ public class CharacterMotor : MonoBehaviour
         }
     }
 
-    public void SetVelocity(Vector3 velocity) => body.velocity = velocity + currentGroundAdjustVelocity;
+    public void Jump(float jumpPower)
+    {
+        if (canJump)
+        {
+            isJump = true;
+            canJump = false;
+            momentum += tr.up * jumpPower;
+        }
+    }
+
+    public void SetVelocity(Vector3 velocity)
+    {
+        if (isJump)
+        {
+            body.velocity = velocity;
+        }
+        else
+        {
+            body.velocity = velocity + currentGroundAdjustVelocity;
+        }
+    }
 
     public void DetectingGround()
     {
@@ -124,9 +141,10 @@ public class CharacterMotor : MonoBehaviour
             WithCastRadius(castRadius).
             WithCastDirection(-tr.up).
             WithCastLength(castLength).
-            WithCastLayers(targetLayers).Cast();
+            WithCastLayers(targetLayers).
+            WithQueryTriggerInteration(QueryTriggerInteraction.Ignore).Cast();
 
-        if (sensor.hasHit())
+        if (sensor.HasHit())
         {
             isGrounded = true;
 
@@ -146,6 +164,13 @@ public class CharacterMotor : MonoBehaviour
                     isSteepSloped = true;
                 }
             }
+        }
+
+
+        if (momentum.ExtractDotVector(tr.up).y <= 0f)
+        {
+            canJump = true;
+            isJump = false;
         }
     }
 

@@ -7,6 +7,8 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField]
     private float moveSpeed = 5f;
+    [SerializeField]
+    private float jumpPower = 7f;
 
     private CharacterMotor motor;
     private AnimationSystem animSystem;
@@ -44,6 +46,11 @@ public class PlayerController : MonoBehaviour
         if (motor.IsGrounded())
         {
             motor.Rotate(movementVector, Time.deltaTime * 10f);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            motor.Jump(jumpPower);
         }
     }
 

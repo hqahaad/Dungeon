@@ -2,35 +2,19 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CapsuleCastSensor
+public class CapsuleCastSensor : CastSensor
 {
-    private Transform tr;
-
-    private float castLength;
     private float castRadius;
     private Vector3 topPoint, bottomPoint;
-    private Vector3 castDirection;
-    private LayerMask targetLayers;
 
-    public RaycastHit raycastHit;
-
-    public Vector3 GetPoint() => raycastHit.point;
-    public Vector3 GetNormal() => raycastHit.normal;
-    public float GetDistance() => raycastHit.distance;
-    public Collider GetHitCollider() => raycastHit.collider;
-    public Rigidbody GetHitRigidbody() => raycastHit.rigidbody;
-    public Transform GetTransform() => raycastHit.transform;
-    public bool hasHit() => raycastHit.collider != null;
-
-    public CapsuleCastSensor(Transform tr)
+    public CapsuleCastSensor(Transform tr) : base(tr)
     {
-        this.tr = tr;
     }
 
-    public void Cast()
+    public override void Cast()
     {
         Physics.CapsuleCast(topPoint, bottomPoint, castRadius, castDirection,
-            out raycastHit, castLength, targetLayers);
+            out castHit, castLength, targetLayers, QueryTriggerInteraction.Ignore);
     }
 
     public CapsuleCastSensor WithCapsulePoint(Vector3 top, Vector3 bottom)
@@ -65,6 +49,13 @@ public class CapsuleCastSensor
     public CapsuleCastSensor WithCastLayers(LayerMask layers)
     {
         targetLayers = layers;
+
+        return this;
+    }
+
+    public CapsuleCastSensor WithQueryTriggerInteration(QueryTriggerInteraction queryTriggerInteraction)
+    {
+        this.queryTriggerInteraction = queryTriggerInteraction;
 
         return this;
     }
