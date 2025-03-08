@@ -11,7 +11,6 @@ public class PlayerController : MonoBehaviour
     private float jumpPower = 7f;
 
     private CharacterMotor motor;
-    private AnimationSystem animSystem;
     private Camera targetCamera;
 
     StateMachine stateMachine = new();
