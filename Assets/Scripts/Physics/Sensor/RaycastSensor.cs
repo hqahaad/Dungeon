@@ -15,21 +15,21 @@ public class RaycastSensor : CastSensor
         Physics.Raycast(castPosition, castDirection, out castHit, castLength, targetLayers);
     }
 
-    public RaycastSensor WidthCastPoint(Vector3 pos)
+    public RaycastSensor WithCastPoint(Vector3 pos)
     {
         castPosition = pos;
 
         return this;
     }
 
-    public RaycastSensor WidthCastDirection(Vector3 direction)
+    public RaycastSensor WithCastDirection(Vector3 direction)
     {
         castDirection = direction.normalized;
 
         return this;
     }
 
-    public RaycastSensor WidthCastLength(float length)
+    public RaycastSensor WithCastLength(float length)
     {
         castLength = length;
 
@@ -39,6 +39,13 @@ public class RaycastSensor : CastSensor
     public RaycastSensor WithCastLayers(LayerMask layers)
     {
         targetLayers = layers;
+
+        return this;
+    }
+
+    public RaycastSensor WithQueryTriggerInteration(QueryTriggerInteraction queryTriggerInteraction)
+    {
+        this.queryTriggerInteraction = queryTriggerInteraction;
 
         return this;
     }

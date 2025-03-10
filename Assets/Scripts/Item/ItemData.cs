@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ItemData : MonoBehaviour
+public abstract class ItemData : ScriptableObject
 {
-
+    [SerializeField] protected string itemName;
+    [SerializeField] protected string itemDesc;
+    [SerializeField] protected Sprite itemIcon;
 }

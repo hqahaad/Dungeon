@@ -25,8 +25,8 @@ public class StatMediator<T> where T : Enum
         modifiersCache.Remove(modifier.StatType);
         modifier.MarkedForRemoval = false;
 
-        modifier.OnDispose += val => InvalidateCache(modifier.StatType);
-        modifier.OnDispose += val => RemoveModifier(modifier);
+        modifier.OnDispose += val => InvalidateCache(val.StatType);
+        modifier.OnDispose += val => RemoveModifier(val);
     }
 
     public void Update(float deltaTime)

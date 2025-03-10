@@ -6,10 +6,6 @@ using UnityEngine;
 [RequireComponent(typeof(CharacterMotor))]
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField]
-    private float moveSpeed = 5f;
-    [SerializeField]
-    private float jumpPower = 7f;
     [Header("Animations")]
     //스테이트들에 생성자에 넣어주는 방식으로 수정
     [SerializeField] public AnimationClip idleAnimation;
@@ -22,14 +18,19 @@ public class PlayerController : MonoBehaviour
     private PlayableAnimator playableAnimator;
     private InputReader inputReader;
     private CharacterStat stat;
+    private ProbeObjectSensor probeSensor;
+    private Inventory inventory;
 
     //Property
     public CharacterMotor Motor => motor;
     public Camera TargetCamera => targetCamera;
     public PlayableAnimator PlayableAnimator => playableAnimator;
     public CharacterStat Stat => stat;
+    public Inventory Inventory => inventory;
 
     private StateMachine stateMachine = new();
+
+    private IInteractable currentInteractable;
 
     void Awake()
     {
@@ -38,6 +39,26 @@ public class PlayerController : MonoBehaviour
         playableAnimator = GetComponent<PlayableAnimator>();
         inputReader = GetComponent<InputReader>();
         stat = GetComponent<CharacterStat>();
+        probeSensor = GetComponent<ProbeObjectSensor>();
+        inventory = GetComponent<Inventory>();
+
+        probeSensor.OnSensorHit += (go) =>
+        {
+            if (go == null)
+            {
+                currentInteractable = null;
+                return;
+            }
+
+            if (go.TryGetComponent(out IInteractable interactable))
+            {
+                currentInteractable = interactable;
+            }
+            else
+            {
+                currentInteractable = null;
+            }
+        };
     }
 
     void Start()
@@ -60,9 +81,9 @@ public class PlayerController : MonoBehaviour
         return inputReader.GetMoveDirection();
     }
 
-    public void Jump()
+    public void Interaction()
     {
-        motor.Jump(jumpPower);
+        currentInteractable?.Interaction(this);
     }
 
     #region State
