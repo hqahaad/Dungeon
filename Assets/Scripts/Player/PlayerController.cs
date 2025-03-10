@@ -69,6 +69,11 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         stateMachine?.Update();
+
+        if (Input.GetKey(KeyCode.C))
+        {
+            Stat.Hp -= 0.1f;
+        }
     }
 
     void FixedUpdate()

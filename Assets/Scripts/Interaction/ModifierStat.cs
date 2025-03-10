@@ -12,12 +12,12 @@ public class ModifierStat : MonoBehaviour, IInteractable
     {
         if (operationType == StatOperationType.Add)
         {
-            player.Stat.mediator.AddModifier(
+            player.Stat.Mediator.AddModifier(
                 new StatModifier<StatType>(statType, new AddOperation(value), duration));
         }
         else
         {
-            player.Stat.mediator.AddModifier(
+            player.Stat.Mediator.AddModifier(
                 new StatModifier<StatType>(statType, new MultiplyOperation(value), duration));
         }
 
