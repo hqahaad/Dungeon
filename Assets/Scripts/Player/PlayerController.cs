@@ -12,6 +12,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] public AnimationClip moveAnimation;
     [SerializeField] public AnimationClip jumpAnimation;
 
+    [Header("SO Events")]
+    [SerializeField] private InteractableGameEvent interactionEvent;
+
     //Reference
     private CharacterMotor motor;
     private Camera targetCamera;
@@ -41,29 +44,26 @@ public class PlayerController : MonoBehaviour
         stat = GetComponent<CharacterStat>();
         probeSensor = GetComponent<ProbeObjectSensor>();
         inventory = GetComponent<Inventory>();
-
-        probeSensor.OnSensorHit += (go) =>
-        {
-            if (go == null)
-            {
-                currentInteractable = null;
-                return;
-            }
-
-            if (go.TryGetComponent(out IInteractable interactable))
-            {
-                currentInteractable = interactable;
-            }
-            else
-            {
-                currentInteractable = null;
-            }
-        };
     }
 
     void Start()
     {
+        //Sample
+        Cursor.visible = false;
+
         SetUpState();
+
+        probeSensor.OnSensorDetected += (go) =>
+        {
+            if (go == null)
+            {
+                interactionEvent?.Raise(null);
+                return;
+            }
+
+            currentInteractable = go.TryGetComponent(out IInteractable interactable) ? interactable : null;
+            interactionEvent?.Raise(currentInteractable);
+        };
     }
 
     void Update()
@@ -89,6 +89,11 @@ public class PlayerController : MonoBehaviour
     public void Interaction()
     {
         currentInteractable?.Interaction(this);
+    }
+
+    public void GetDamage(float damage)
+    {
+        Stat.Hp -= damage;
     }
 
     #region State

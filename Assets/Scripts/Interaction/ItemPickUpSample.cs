@@ -15,6 +15,17 @@ public class ItemPickUpSample : PickUp
         if (items.Count == 0)
             return;
 
-        player.Inventory.AddItem(items[Random.Range(0, items.Count)]);
+        var newItem = items[Random.Range(0, items.Count)];
+
+        if (newItem is EquipmentItemData)
+        {
+            EquipmentItem newEquipment = new EquipmentItem(newItem);
+
+            player.Inventory.AddItem(new EquipmentItem(newItem), 1);
+        }
+        else
+        {
+            player.Inventory.AddItem(new ConsumableItem(newItem), Random.Range(0, 50));
+        }
     }
 }

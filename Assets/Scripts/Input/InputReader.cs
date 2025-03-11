@@ -11,6 +11,7 @@ public class InputReader : MonoBehaviour, UserActions.IPlayerActions
     [SerializeField] private UnityEvent<Vector2> OnMoveEvent;
     [SerializeField] private UnityEvent OnJumpEvent;
     [SerializeField] private UnityEvent OnInteractionEvent;
+    [SerializeField] private UnityEvent OnInventoryEvent;
 
     public bool IsMoveKeyPressed { get; private set; }
     public bool IsJumpKeyPressed { get; private set; }
@@ -72,6 +73,14 @@ public class InputReader : MonoBehaviour, UserActions.IPlayerActions
         else if (context.phase == InputActionPhase.Canceled)
         {
             IsInteractionKeyPressed = false;
+        }
+    }
+
+    public void OnOnInventory(InputAction.CallbackContext context)
+    {
+        if (context.phase == InputActionPhase.Started)
+        {
+            OnInventoryEvent?.Invoke();
         }
     }
 }

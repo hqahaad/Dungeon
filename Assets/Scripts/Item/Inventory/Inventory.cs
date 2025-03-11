@@ -1,65 +1,99 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System.Linq;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
 public class Inventory : MonoBehaviour
 {
-    public List<ItemSlot> itemSlots;
+    [SerializeField] private List<ItemSlot> itemSlots;
 
-    private const int maxSlotCount = 3;
+    public event Action<int, ItemSlot> OnChangedItemSlot = delegate { };
+
+    private const int inventoryCapacity = 50;
+    private const int slotCapacity = 50;
 
     void Awake()
     {
         Initialize();
     }
 
-    public bool CanPickUpItem()
+    public bool AddItem(Item item, int amount)
     {
-        return true;
-    }
+        if (!CanAdd(item, amount))
+            return false;
 
-    public void AddItem(ItemData item)
-    {
-        if (!CanPickUpItem())
-            return;
-
-        var emptySlot = itemSlots.FirstOrDefault(s => s.IsEmpty);
-
-        if (emptySlot != null)
+        if (item is EquipmentItem)
         {
-            emptySlot.Add(item);
+            var result = itemSlots.Where(s => s.IsEmpty).ToList();
+
+            for (int i = 0; i < amount; i++)
+            {
+                result[i].Add(item, 1);
+
+                OnChangedItemSlot?.Invoke(itemSlots.IndexOf(result[i]), result[i]);
+            }
+
+            return true;
+        }
+        else
+        {
+            int remaining = amount;
+
+            foreach (var iter in itemSlots.Where(s => s.ItemInstance.ItemData == item.ItemData && s.Count < slotCapacity))
+            {
+                int addAmount = Mathf.Min(slotCapacity - iter.Count, remaining);
+
+                iter.Add(item, addAmount);
+                remaining -= addAmount;
+
+                OnChangedItemSlot?.Invoke(itemSlots.IndexOf(iter), iter);
+
+                if (remaining <= 0)
+                    return true;
+            }
+
+            foreach (var iter in itemSlots.Where(s => s.IsEmpty))
+            {
+                int addAmount = Mathf.Min(slotCapacity, remaining);
+                
+                iter.Add(item, addAmount);
+                remaining -= addAmount;
+
+                OnChangedItemSlot?.Invoke(itemSlots.IndexOf(iter), iter);
+
+                if (remaining <= 0)
+                    return true;
+            }
+
+            return true;
         }
     }
 
-    public void ConsumeItem(ItemData item)
+    private bool CanAdd(Item item, int amount)
     {
-        var targetSlot = itemSlots.FirstOrDefault(s => s.ItemData == item);
+        if (item == null)
+            return false;
 
-        if (targetSlot != null)
+        if (item is EquipmentItem)
         {
-            targetSlot.Consume();
+            var result = itemSlots.Where(s => s.IsEmpty);
+
+            return result.Count() >= amount;
+        }
+        else
+        {
+            int space = itemSlots.Where(s => s.IsEmpty || s.ItemInstance.ItemData == item.ItemData).
+                Sum(s => slotCapacity - s.Count);
+
+            return space >= amount;
         }
     }
-
-    public void ConsumeItemByIndex(int index)
-    {
-        if (index >= maxSlotCount)
-            return;
-
-        if (!itemSlots[index].IsEmpty)
-        {
-            itemSlots[index].Consume();
-        }
-    }
-
 
     private void Initialize()
     {
         itemSlots = new List<ItemSlot>();
 
-        for (int i = 0; i < maxSlotCount; i++)
+        for (int i = 0; i < inventoryCapacity; i++)
         {
             itemSlots.Add(new ItemSlot());
         }
@@ -69,32 +103,28 @@ public class Inventory : MonoBehaviour
 [Serializable]
 public class ItemSlot
 {
-    [field: SerializeField] public ItemData ItemData { get; private set; } = null;
+    [field: SerializeField] public Item ItemInstance { get; private set; } = null;
     [field: SerializeField] public bool IsEmpty { get; private set; } = true;
     [field: SerializeField] public int Count { get; private set; } = 0;
 
-    public void Add(ItemData item)
+    public void Add(Item item, int amount)
     {
-        if (IsEmpty)
-        {
-            ItemData = item;
-        }
-        else if (ItemData == item)
-        {
-            Count += 1;
-        }
+        if (amount <= 0)
+            return;
+
+        ItemInstance = item;
+        IsEmpty = false;
+        Count += amount;
     }
 
-    public void Consume()
+    public void Remove(int amount)
     {
-        Count -= 1;
 
-        if (Count <= 0)
-        {
-            ItemData = null;
-            IsEmpty = true;
-            Count = 0;
-        }
+    }
+
+    public ItemSlot()
+    {
+        ItemInstance = new NullItem(null);
     }
 }
 

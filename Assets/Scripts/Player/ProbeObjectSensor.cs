@@ -11,7 +11,7 @@ public class ProbeObjectSensor : MonoBehaviour
     private RaycastSensor sensor;
     private Collider colliderCache = null;
 
-    public event Action<GameObject> OnSensorHit = delegate { };
+    public event Action<GameObject> OnSensorDetected = delegate { };
 
     void Awake()
     {
@@ -25,33 +25,35 @@ public class ProbeObjectSensor : MonoBehaviour
         StartCoroutine(UpdateSensor(delay));
     }
 
+    void Update()
+    {
+        Debug.DrawLine(transform.position, transform.position + transform.forward * castLength, Color.magenta);
+    }
+
     private IEnumerator UpdateSensor(WaitForSeconds delay)
     {
         while (true)
         {
-            var camDir = (transform.position - Camera.main.transform.position).normalized;
+            var direction = transform.forward;
 
             sensor.WithCastLength(castLength).
                 WithCastPoint(transform.position).
-                WithCastDirection(camDir).
+                WithCastDirection(direction).
                 WithCastLayers(targetLayers).
                 WithQueryTriggerInteration(QueryTriggerInteraction.Collide).
                 Cast();
-
-            Debug.DrawLine(transform.position,
-                transform.position + camDir * castLength, Color.green);
 
             if (sensor.HasHit())
             {
                 if (colliderCache == null || colliderCache != sensor.GetHitCollider())
                 {
-                    OnSensorHit?.Invoke(sensor.GetHitCollider().gameObject);
+                    OnSensorDetected?.Invoke(sensor.GetHitCollider().gameObject);
                     colliderCache = sensor.GetHitCollider();
                 }
             }
             else
             {
-                OnSensorHit?.Invoke(null);
+                OnSensorDetected?.Invoke(null);
                 colliderCache = null;
             }
 
