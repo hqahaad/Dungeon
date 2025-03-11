@@ -11,5 +11,7 @@ public class IdleState : BaseState
     public override void OnEnter()
     {
         playerController.PlayableAnimator.Play(playerController.idleAnimation, 0.2f);
+
+        playerController.Motor.Move(Vector2.zero);
     }
 }

@@ -12,6 +12,7 @@ public class TriggerArea : MonoBehaviour
     {
         if (col.attachedRigidbody != null)
         {
+            Debug.Log("asdf");
             rigidbodies.Add(col.attachedRigidbody);
         }
     }

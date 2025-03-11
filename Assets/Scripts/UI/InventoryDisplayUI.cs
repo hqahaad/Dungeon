@@ -31,6 +31,7 @@ public class InventoryDisplayUI : MonoBehaviour
     private void ChangedSlot(int index, ItemSlot slot)
     {
         Debug.Log($"{index}°¡ {slot.Count}°³");
+        slots[index].OnChangedSlot(slot);
     }
 
 

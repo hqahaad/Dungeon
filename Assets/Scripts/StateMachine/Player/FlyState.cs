@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class JumpState : BaseState
+public class FlyState : BaseState
 {
-    public JumpState(PlayerController controller) : base(controller)
+    public FlyState(PlayerController controller) : base(controller)
     {
     }
 
@@ -12,6 +12,6 @@ public class JumpState : BaseState
     {
         playerController.PlayableAnimator.Play(playerController.jumpAnimation, 0.2f);
 
-        playerController.Motor.Jump(7f);
+        //playerController.Motor.Jump(playerController.Stat.JumpPower);
     }
 }

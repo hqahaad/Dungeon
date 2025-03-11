@@ -56,6 +56,7 @@ public class CharacterMotor : MonoBehaviour
     public bool IsGrounded() => isGrounded;
     public bool IsSloped() => isSloped;
     public bool IsSteepSloped() => isSteepSloped;
+    public bool IsJump() => isJump;
 
     void Awake()
     {
@@ -164,12 +165,17 @@ public class CharacterMotor : MonoBehaviour
                     isSteepSloped = true;
                 }
             }
+
+            if (momentum.ExtractDotVector(tr.up).y <= 0f)
+            {
+                canJump = true;
+                isJump = false;
+            }
         }
 
 
         if (momentum.ExtractDotVector(tr.up).y <= 0f)
         {
-            canJump = true;
             isJump = false;
         }
     }

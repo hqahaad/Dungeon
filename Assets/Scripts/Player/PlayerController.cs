@@ -7,7 +7,6 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [Header("Animations")]
-    //스테이트들에 생성자에 넣어주는 방식으로 수정
     [SerializeField] public AnimationClip idleAnimation;
     [SerializeField] public AnimationClip moveAnimation;
     [SerializeField] public AnimationClip jumpAnimation;
@@ -91,6 +90,16 @@ public class PlayerController : MonoBehaviour
         currentInteractable?.Interaction(this);
     }
 
+    public void Jump()
+    {
+        Motor.Jump(Stat.JumpPower);
+    }
+
+    public void Jump(float jumpPower)
+    {
+        Motor.Jump(jumpPower);
+    }
+
     public void GetDamage(float damage)
     {
         Stat.Hp -= damage;
@@ -101,16 +110,16 @@ public class PlayerController : MonoBehaviour
     {
         var idleState = new IdleState(this);
         var moveState = new MoveState(this);
-        var jumpState = new JumpState(this);
+        var flyState = new FlyState(this);
 
         At(idleState, moveState, new FuncPredicate(() => inputReader.IsMoveKeyPressed));
-        At(idleState, jumpState, new FuncPredicate(() => motor.IsGrounded() && inputReader.IsJumpKeyPressed));
+        At(idleState, flyState, new FuncPredicate(() => !motor.IsGrounded()));
 
         At(moveState, idleState, new FuncPredicate(() => !inputReader.IsMoveKeyPressed));
-        At(moveState, jumpState, new FuncPredicate(() => motor.IsGrounded() && inputReader.IsJumpKeyPressed));
+        At(moveState, flyState, new FuncPredicate(() => !motor.IsGrounded()));
 
-        At(jumpState, idleState, new FuncPredicate(() => motor.IsGrounded() && !inputReader.IsMoveKeyPressed));
-        At(jumpState, moveState, new FuncPredicate(() => motor.IsGrounded() && inputReader.IsMoveKeyPressed));
+        At(flyState, idleState, new FuncPredicate(() => motor.IsGrounded() && !motor.IsJump()));
+        At(flyState, moveState, new FuncPredicate(() => motor.IsGrounded() && !motor.IsJump()));
 
         stateMachine.SetState(idleState);
     }

@@ -25,8 +25,8 @@ public class MoveState : BaseState
 
         if (cam != null)
         {
-            var right = Vector3.ProjectOnPlane(cam.right, playerController.transform.up).normalized * x;
-            var forward = Vector3.ProjectOnPlane(cam.forward, playerController.transform.up).normalized * y;
+            var right = Vector3.ProjectOnPlane(cam.right, playerController.transform.up) * x;
+            var forward = Vector3.ProjectOnPlane(cam.forward, playerController.transform.up) * y;
 
             project = right + forward;
         }
@@ -47,6 +47,6 @@ public class MoveState : BaseState
 
     public override void OnExit()
     {
-        playerController.Motor.Move(Vector3.zero);
+        //playerController.Motor.Move(Vector3.zero);
     }
 }
